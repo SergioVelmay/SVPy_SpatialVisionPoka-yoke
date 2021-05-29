@@ -1,0 +1,7 @@
+Part.Hole
+Part5.False.A
+Part5.False.B
+Part5.True
+Part6.False.A
+Part6.False.B
+Part6.True
