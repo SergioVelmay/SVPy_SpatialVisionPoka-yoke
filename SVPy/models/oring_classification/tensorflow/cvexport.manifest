@@ -1,0 +1,13 @@
+{
+  "DomainType": "Classification",
+  "Platform": "TensorFlow",
+  "Flavor": null,
+  "ExporterVersion": "2.1",
+  "ExportedDate": "2021-03-22T21:18:02.5122865Z",
+  "IterationId": "595dcdc9-6138-4917-b5b5-06edc2ccffc0",
+  "ModelFileName": "model.pb",
+  "LabelFileName": "labels.txt",
+  "MetadataPropsFileName": "metadata_properties.json",
+  "ModelFileSHA1": "01725aa966433e34ee524fdcfbc3da804710be7b",
+  "SchemaVersion": "1.0"
+}
