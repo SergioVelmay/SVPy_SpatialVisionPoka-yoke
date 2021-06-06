@@ -19,8 +19,6 @@ camRgb.preview.link(xoutRgb.input)
 
 # Connect to the device
 with dai.Device() as device:
-    # Print out available cameras
-    print('Connected cameras: ', device.getConnectedCameras())
     # Start pipeline
     device.startPipeline(pipeline)
 
