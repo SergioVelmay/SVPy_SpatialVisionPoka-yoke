@@ -3,6 +3,9 @@ import depthai as dai
 import numpy as np
 from pathlib import Path
 
+from SVPy.classes_prediction import Detection
+
+
 # Start defining a pipeline
 pipeline = dai.Pipeline()
 
@@ -34,41 +37,6 @@ frame_in.out.link(nnet.input)
 nnet_xout = pipeline.createXLinkOut()
 nnet_xout.setStreamName("NNET")
 nnet.out.link(nnet_xout.input)
-
-
-
-
-
-
-class Classification:
-
-    def __init__(self, label, probability):
-        self.Label = label
-        self.Probability = probability
-
-    def __str__(self):
-        words = str.upper(self.Label).split('.')
-        if (self.Label.startswith('Step') or self.Label.startswith('Part')):
-            words[0] = words[0][:4] + ' #' + words[0][4:]
-        return ' - '.join(tuple(words)) + '   ( {:.1f}'.format(self.Probability) + '% )'
-
-class Boundary:
-
-    def __init__(self, x, y, w, h):
-        self.Left = x
-        self.Top = y
-        self.Width = w
-        self.Height = h
-
-    def __str__(self):
-        return 'x:{:.2f} y:{:.2f} w:{:.2f} h:{:.2f}'.format(
-            self.Left, self.Top, self.Width, self.Height)
-
-class Detection(Classification):
-
-    def __init__(self, label, probability, x, y, w, h):
-        Classification.__init__(self, label, probability)
-        self.Box = Boundary(x, y, w, h)
 
 PROB_THRESHOLD = 0.2
 MAX_DETECTIONS = 5
@@ -187,18 +155,13 @@ def non_maximum_suppression(boxes, class_probs):
     return selected_boxes, selected_classes, selected_probs
 
 def displayFrame(frame, detections):
-    for detection in detections:
+    for id, detection in enumerate(detections):
         cv2.rectangle(frame, 
         (int(detection.Box.Left * 480) + 80, int(detection.Box.Top * 480)), 
         (int((detection.Box.Left + detection.Box.Width) * 480) + 80, int((detection.Box.Top + detection.Box.Height) * 480)), 
         (255, 0, 0), 2)
-        cv2.putText(frame, detection.Label, (int(detection.Box.Left * 480) + 80 + 10, int(detection.Box.Top * 480) + 20), cv2.FONT_HERSHEY_TRIPLEX, 0.5, 255)
-        cv2.putText(frame, f"{int(detection.Probability)}%", (int(detection.Box.Left * 480) + 80 + 10, int(detection.Box.Top * 480) + 40), cv2.FONT_HERSHEY_TRIPLEX, 0.5, 255)
+        cv2.putText(frame, f"{detection.Label} {int(detection.Probability)}%", (int(detection.Box.Left * 480) + 80 + 10, int(detection.Box.Top * 480) + 20), cv2.FONT_HERSHEY_TRIPLEX, 0.5, 255)
     cv2.imshow('COMBO', frame)
-
-
-
-
 
 # Connect to the device
 with dai.Device() as device:
