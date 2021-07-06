@@ -3,7 +3,7 @@ import depthai as dai
 import numpy as np
 from pathlib import Path
 
-from SVPy.classes_prediction import Classification
+from classes_prediction import Classification
 
 
 # Start defining a pipeline
@@ -38,10 +38,10 @@ nnet_xout = pipeline.createXLinkOut()
 nnet_xout.setStreamName("NNET")
 nnet.out.link(nnet_xout.input)
 
-PROB_THRESHOLD_CLASS = 0.2
+PROB_THRESHOLD_CLASS = 0.5
 MAX_DETECTIONS_CLASS = 3
 
-LABELS_CLASS = [       
+LABELS_CLASS = [
     'Back',
     'Front',
     'Hole.No',
@@ -73,8 +73,8 @@ def postprocess_classification(outputs):
 
 def displayFrame(frame, detections):
     for id, detection in enumerate(detections):
-        cv2.putText(frame, f"{detection.Label} {int(detection.Probability)}%", (80 + 10, 20 + (20 * id)), cv2.FONT_HERSHEY_TRIPLEX, 0.5, 255)
-    cv2.imshow('COMBO', frame)
+        cv2.putText(frame, f"{detection.Label} {int(detection.Probability)}%", (40, 55 + (35 * id)), cv2.FONT_HERSHEY_SIMPLEX, 0.75, 255, thickness=2)
+    cv2.imshow('SVPy | Spatial Vision Poka-yoke', frame)
 
 # Connect to the device
 with dai.Device() as device:
