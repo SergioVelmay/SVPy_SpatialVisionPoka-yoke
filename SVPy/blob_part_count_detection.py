@@ -3,7 +3,7 @@ import depthai as dai
 import numpy as np
 from pathlib import Path
 
-from SVPy.classes_prediction import Detection
+from classes_prediction import Detection
 
 
 # Start defining a pipeline
@@ -44,7 +44,7 @@ MAX_DETECTIONS = 5
 ANCHOR_BOXES = np.array([[0.573, 0.677], [1.87, 2.06], [3.34, 5.47], [7.88, 3.53], [9.77, 9.17]])
 IOU_THRESHOLD = 0.5
 
-LABELS = [       
+LABELS = [
     'Part.Hole',
     'Part5.False.A',
     'Part5.False.B',
@@ -160,8 +160,8 @@ def displayFrame(frame, detections):
         (int(detection.Box.Left * 480) + 80, int(detection.Box.Top * 480)), 
         (int((detection.Box.Left + detection.Box.Width) * 480) + 80, int((detection.Box.Top + detection.Box.Height) * 480)), 
         (255, 0, 0), 2)
-        cv2.putText(frame, f"{detection.Label} {int(detection.Probability)}%", (int(detection.Box.Left * 480) + 80 + 10, int(detection.Box.Top * 480) + 20), cv2.FONT_HERSHEY_TRIPLEX, 0.5, 255)
-    cv2.imshow('COMBO', frame)
+        cv2.putText(frame, f"{detection.Label} {int(detection.Probability)}%", (int(detection.Box.Left * 480) + 80 + 10, int(detection.Box.Top * 480) + 20), cv2.FONT_HERSHEY_SIMPLEX, 0.75, 255, thickness=2)
+    cv2.imshow('SVPy | Spatial Vision Poka-yoke', frame)
 
 # Connect to the device
 with dai.Device() as device:
