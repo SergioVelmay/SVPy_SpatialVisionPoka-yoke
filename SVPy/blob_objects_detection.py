@@ -158,7 +158,7 @@ def displayFrame(frame, detections):
         (int(detection.Box.Left * 480) + 80, int(detection.Box.Top * 480)), 
         (int((detection.Box.Left + detection.Box.Width) * 480) + 80, int((detection.Box.Top + detection.Box.Height) * 480)), 
         (255, 0, 0), 2)
-        cv2.putText(frame, f"{detection.Label} {int(detection.Probability)}%", (40, 55 + (35 * id)), cv2.FONT_HERSHEY_SIMPLEX, 0.75, 255, thickness=2)
+        cv2.putText(frame, f"{detection.Label} {int(detection.Score)}%", (40, 55 + (35 * id)), cv2.FONT_HERSHEY_SIMPLEX, 0.75, 255, thickness=2)
     cv2.imshow('SVPy | Spatial Vision Poka-yoke', frame)
 
 # Connect to the device
