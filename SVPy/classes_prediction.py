@@ -1,14 +1,14 @@
 class Classification:
 
-    def __init__(self, label, probability):
+    def __init__(self, label, score):
         self.Label = label
-        self.Probability = probability
+        self.Score = score
 
     def __str__(self):
         words = str.upper(self.Label).split('.')
         if (self.Label.startswith('Step') or self.Label.startswith('Part')):
             words[0] = words[0][:4] + ' #' + words[0][4:]
-        return ' - '.join(tuple(words)) + '   ( {:.1f}'.format(self.Probability) + '% )'
+        return ' - '.join(tuple(words)) + '   ( {:.1f}'.format(self.Score) + '% )'
 
 class Boundary:
 
@@ -24,6 +24,6 @@ class Boundary:
 
 class Detection(Classification):
 
-    def __init__(self, label, probability, x, y, w, h):
-        Classification.__init__(self, label, probability)
+    def __init__(self, label, score, x, y, w, h):
+        Classification.__init__(self, label, score)
         self.Box = Boundary(x, y, w, h)
