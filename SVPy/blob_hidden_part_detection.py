@@ -3,7 +3,7 @@ import depthai as dai
 import numpy as np
 from pathlib import Path
 
-from classes_prediction import Detection
+from blob_classes_prediction import Detection
 
 
 # Start defining a pipeline
@@ -149,12 +149,12 @@ def non_maximum_suppression(boxes, class_probs):
     return selected_boxes, selected_classes, selected_probs
 
 def displayFrame(frame, detections):
-    for id, detection in enumerate(detections):
+    for detection in detections:
         cv2.rectangle(frame, 
         (int(detection.Box.Left * 480) + 80, int(detection.Box.Top * 480)), 
         (int((detection.Box.Left + detection.Box.Width) * 480) + 80, int((detection.Box.Top + detection.Box.Height) * 480)), 
         (255, 0, 0), 2)
-        cv2.putText(frame, f"{detection.Label} {int(detection.Probability)}%", (int(detection.Box.Left * 480) + 80 + 15, int(detection.Box.Top * 480) + 30), cv2.FONT_HERSHEY_SIMPLEX, 0.75, 255, thickness=2)
+        cv2.putText(frame, f"{detection.Label} {int(detection.Score)}%", (int(detection.Box.Left * 480) + 80 + 15, int(detection.Box.Top * 480) + 30), cv2.FONT_HERSHEY_SIMPLEX, 0.75, 255, thickness=2)
     cv2.imshow('SVPy | Spatial Vision Poka-yoke', frame)
 
 # Connect to the device

@@ -3,7 +3,7 @@ import depthai as dai
 import numpy as np
 from pathlib import Path
 
-from classes_prediction import Classification
+from blob_classes_prediction import Classification
 
 
 # Start defining a pipeline
@@ -63,8 +63,8 @@ def postprocess_classification(outputs):
         return predictions
 
 def displayFrame(frame, detections):
-    for id, detection in enumerate(detections):
-        cv2.putText(frame, f"{detection.Label} {int(detection.Probability)}%", (40, 55), cv2.FONT_HERSHEY_SIMPLEX, 0.75, 255, thickness=2)
+    for detection in detections:
+        cv2.putText(frame, f"{detection.Label} {int(detection.Score)}%", (40, 55), cv2.FONT_HERSHEY_SIMPLEX, 0.75, 255, thickness=2)
     cv2.imshow('SVPy | Spatial Vision Poka-yoke', frame)
 
 # Connect to the device
