@@ -3,7 +3,7 @@ import depthai as dai
 import numpy as np
 from pathlib import Path
 
-from classes_prediction import Classification
+from blob_classes_prediction import Classification
 
 
 # Start defining a pipeline
