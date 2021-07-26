@@ -3,7 +3,7 @@
 - [DepthAI Setup](#depthai-setup)
     - [Links](#depthai-setup-links)
     - [Windows](#depthai-setup-windows)
-    - [Raspberry](#depthai-setup-raspberri)
+    - [Raspberry](#depthai-setup-ubuntu)
 
 ## DepthAI Setup
 
@@ -78,15 +78,15 @@
 
 [⇧](#top)
 
-### Raspberry <a id="depthai-setup-ubuntu"></a>
+### Ubuntu <a id="depthai-setup-ubuntu"></a>
 
-- Linux Ubuntu 21.04
+- Ubuntu Server 20.04.2 LTS 64-bit
 
 - [Install the necessary dependencies](https://docs.luxonis.com/projects/api/en/latest/install/#ubuntu)
 
-1. Install Git
+1. Install Python (3.6, 3.7, 3.8)
     ```
-    sudo apt-get install git
+    sudo apt-get install python3
     ```
 
 2. Clone repository
@@ -99,29 +99,32 @@
     cd SVPy_SpatialVisionPoka-yoke/
     ```
 
-4. Install venv
-    ```
-    sudo apt install python3-venv
-    ```
-
-5. Create virtual environment
+4. Create virtual environment
     ```
     python3 -m venv venv
     ```
 
-6. Active environment
+5. Active environment
     ```
     source venv/bin/activate
     ```
 
-7. Change folder
+6. Install dependences
     ```
-    cd SVPy/
+    pip install opencv-python
+
+    sudo apt-get install libatlas-base-dev
+
+    pip install depthai
+
+    pip install pillow
+
+    pip install openvino
     ```
 
-8. Install dependences
+8. Change folder
     ```
-    
+    cd SVPy/
     ```
 
 9. Run the project
@@ -129,8 +132,4 @@
     python3 svpy.py
     ```
 
-### Raspberry <a id="depthai-setup-raspberri"></a>
-
-- Raspberry Pi OS
-
-- [Install the necessary dependencies](https://docs.luxonis.com/projects/api/en/latest/install/#raspberry-pi-os)
+[⇧](#top)
