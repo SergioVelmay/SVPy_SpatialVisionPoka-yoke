@@ -78,6 +78,59 @@
 
 [⇧](#top)
 
+### Raspberry <a id="depthai-setup-ubuntu"></a>
+
+- Linux Ubuntu 21.04
+
+- [Install the necessary dependencies](https://docs.luxonis.com/projects/api/en/latest/install/#ubuntu)
+
+1. Install Git
+    ```
+    sudo apt-get install git
+    ```
+
+2. Clone repository
+    ```
+    git clone https://github.com/SergioVelmay/SVPy_SpatialVisionPoka-yoke.git
+    ```
+
+3. Change folder
+    ```
+    cd SVPy_SpatialVisionPoka-yoke/
+    ```
+
+4. Install venv
+    ```
+    sudo apt install python3-venv
+    ```
+
+5. Create virtual environment
+    ```
+    python3 -m venv venv
+    ```
+
+6. Active environment
+    ```
+    source venv/bin/activate
+    ```
+
+7. Change folder
+    ```
+    cd SVPy/
+    ```
+
+8. Install dependences
+    ```
+    
+    ```
+
+9. Run the project
+    ```
+    python3 svpy.py
+    ```
+
 ### Raspberry <a id="depthai-setup-raspberri"></a>
 
 - Raspberry Pi OS
+
+- [Install the necessary dependencies](https://docs.luxonis.com/projects/api/en/latest/install/#raspberry-pi-os)
