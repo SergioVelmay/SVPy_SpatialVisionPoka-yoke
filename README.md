@@ -3,7 +3,7 @@
 - [DepthAI Setup](#depthai-setup)
     - [Links](#depthai-setup-links)
     - [Windows](#depthai-setup-windows)
-    - [Raspberry](#depthai-setup-ubuntu)
+    - [Ubuntu](#depthai-setup-ubuntu)
 
 ## DepthAI Setup
 
@@ -80,13 +80,17 @@
 
 ### Ubuntu <a id="depthai-setup-ubuntu"></a>
 
-- Ubuntu Server 20.04.2 LTS 64-bit
+- Ubuntu 20.04 LTS 64-bit
 
 - [Install the necessary dependencies](https://docs.luxonis.com/projects/api/en/latest/install/#ubuntu)
 
-1. Install Python (3.6, 3.7, 3.8)
+1. Install Python 3.6
     ```
-    sudo apt-get install python3
+    sudo apt update
+
+    sudo add-apt-repository ppa:deadsnakes/ppa
+
+    sudo apt-get install python3.6
     ```
 
 2. Clone repository
@@ -101,6 +105,8 @@
 
 4. Create virtual environment
     ```
+    sudo apt install python3.6-venv
+
     python3 -m venv venv
     ```
 
@@ -111,15 +117,21 @@
 
 6. Install dependences
     ```
-    pip install opencv-python
+    sudo apt install python3-pip
 
-    sudo apt-get install libatlas-base-dev
+    pip install upgrade pip
+
+    pip install opencv-python
 
     pip install depthai
 
     pip install pillow
 
+    sudo apt-get install python3-pil python3-pil.imagetk
+
     pip install openvino
+
+    pip install openvino-dev
     ```
 
 8. Change folder
