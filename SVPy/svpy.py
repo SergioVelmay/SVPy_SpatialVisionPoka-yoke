@@ -4,7 +4,7 @@ from PIL import ImageTk, Image
 from datetime import datetime
 import logging
 from openvino.inference_engine import IECore
-
+import time
 import warnings
 
 warnings.filterwarnings("ignore")
@@ -42,7 +42,7 @@ for model in range(number_of_models):
     for message in range(number_of_messages[model]):
         message_waitings[str(model) + str(message)] = 0
 
-waiting_millis = 1
+waiting_millis = 3
 waiting_frames = 30
 
 min_validations = 30
@@ -76,11 +76,11 @@ frame_number = 0
 
 logging.basicConfig(format='[ %(levelname)s ] New Image Capture | Frame Count %(message)s | %(asctime)s', level=logging.INFO)
 
-camera = Camera()
-
 inference_engine = IECore()
 print('[ SVPy ] OpenVINO Inference Engine created')
 
+glove_class = ImageClassification(inference_engine, 'models/gloves_classification/openvino/', 0.5, 1)
+print('[ SVPy ] Gloves Classification model loaded')
 part_count = ObjectDetection(inference_engine, 'models/part_count_detection/openvino/', 0.2, 5)
 print('[ SVPy ] Part Count Detection model loaded')
 multilabel = ImageClassification(inference_engine, 'models/multilabel_classification/openvino/', 0.5, 3)
@@ -93,8 +93,10 @@ part_4_det = ObjectDetection(inference_engine, 'models/hidden_part_detection/ope
 print('[ SVPy ] Hidden Part Detection model loaded')
 oring_class = ImageClassification(inference_engine, 'models/oring_classification/openvino/', 0.5, 1)
 print('[ SVPy ] O-Ring Classification model loaded')
-glove_class = ImageClassification(inference_engine, 'models/gloves_classification/openvino/', 0.5, 1)
-print('[ SVPy ] Gloves Classification model loaded')
+
+camera = Camera()
+
+time.sleep(3)
 
 def video_streaming():
     time_total_start = datetime.now().microsecond
