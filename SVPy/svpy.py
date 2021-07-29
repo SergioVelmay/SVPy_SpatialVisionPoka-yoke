@@ -43,9 +43,9 @@ for model in range(number_of_models):
         message_waitings[str(model) + str(message)] = 0
 
 waiting_millis = 3
-waiting_frames = 30
+waiting_frames = 20
 
-min_validations = 30
+min_validations = 20
 
 welcome_message = welcome
 welcome_waiting = 0
@@ -67,7 +67,8 @@ part4_detected = False
 oring_counts_ok = 0
 
 glove_tracking = False
-gloves_missing = False
+hand_detected = False
+glove_detected = False
 
 operator_tracking = False
 operator_detected = False
@@ -99,12 +100,7 @@ camera = Camera()
 time.sleep(3)
 
 def video_streaming():
-    time_total_start = datetime.now().microsecond
     global frame_number
-    logging.info(str(frame_number).zfill(6))
-    time_inference_start = 0
-    time_inference_end = 0
-    
     global welcome_message
     global welcome_waiting
     global parts_counting
@@ -113,10 +109,18 @@ def video_streaming():
     global oring_counts_ok
     global min_validations
     global glove_tracking
-    global gloves_missing
+    global hand_detected
+    global glove_detected
     global operator_tracking
     global operator_detected
+    global assembly_completed
+    global completed_count
 
+    time_total_start = datetime.now().microsecond
+    logging.info(str(frame_number).zfill(6))
+    time_inference_start = 0
+    time_inference_end = 0
+    
     image = camera.Frame
 
     if welcome_waiting > waiting_frames:
@@ -139,17 +143,17 @@ def video_streaming():
             elif current_model == 2:
                 predictions = multiclass.Infer(image_crop)
         if glove_tracking:
+            glove_detected = False
+            hand_detected = False
             tracking = glove_class.Infer(image_crop)
             if len(tracking) > 0:
-                if 'Negative' not in tracking[0].Label:
-                    predictions.append(tracking[0])
+                predictions.append(tracking[0])
+                if 'Glove' in tracking[0].Label:
+                    glove_detected = True
                 if 'Hand' in tracking[0].Label:
-                    gloves_missing = True
-                else:
-                    gloves_missing = False
+                    hand_detected = True
         if operator_tracking:
             tracking = glove_class.Infer(image_crop)
-            checking_value = 'aux'
             if len(tracking) > 0:
                 predictions.append(tracking[0])
                 if 'Negative' in tracking[0].Label:
@@ -165,10 +169,10 @@ def video_streaming():
         elif oring_tracking:
             detections = process_part_4_det(predictions)
             image = draw_detections(image, detections)
-            if not gloves_missing:
-                text = 'INSERT THE BLACK O-RING ON THE GREY ROTOR PART'
-            else:
+            if hand_detected:
                 text = 'SAFETY GLOVES ARE NEEDED TO RESUME ASSEMBLY'
+            else:
+                text = 'INSERT THE BLACK O-RING ON THE GREY ROTOR PART'
             if part4_detected:
                 zoom = detections[0].Box
                 x1 = int(round(zoom.Left * 480))
@@ -184,15 +188,16 @@ def video_streaming():
                         predictions.append(validations[0])
                         if 'True' in validations[0].Label:
                             color = colors_bgr['yes']
-                            if not gloves_missing:
+                            if glove_detected:
+                                draw_validation('yes')
                                 oring_counts_ok = oring_counts_ok + 1
                                 if oring_counts_ok > min_validations:
                                     oring_tracking = False
                                     glove_tracking = False
-                                    gloves_missing = False
+                                    glove_detected = False
+                                    hand_detected = False
                         else:
                             color = colors_bgr['no']
-                            draw_validation('no')
                         cv2.putText(image, 'O-Ring', (x1 + 85, y1 + 25), fontFace=cv2.FONT_HERSHEY_DUPLEX,  
                             fontScale=0.9, thickness=2, color=color, bottomLeftOrigin=False)
             window.instruction.config(text=text)
@@ -209,11 +214,8 @@ def video_streaming():
             window.assembly.config(image=assembly_images[current_step])
             print_currently(len(predictions))
         if operator_tracking:
-            if not operator_detected:
-                checking_value = 'yes'
-            else:
-                checking_value = 'no'
-            draw_validation(checking_value)
+            if operator_detected:
+                draw_validation('no')
             window.instruction.config(text='CAUTION! THE ASSEMBLY AREA SHOULD BE CLEAR NOW')
             window.assembly.config(image=assembly_images[7])
             window.currently.config(text='Assembly Area detections:')
@@ -222,24 +224,25 @@ def video_streaming():
     else:
         write_instruction(welcome_message)
         welcome_waiting = welcome_waiting + 1
-    global assembly_completed
-    global completed_count
     if assembly_completed:
-        if completed_count < 60:
+        if completed_count < 40:
             completed_count = completed_count + 1
+            draw_validation('yes')
             cv2_array = draw_completed(image)
         else:
             cv2_array = cv2.cvtColor(image, cv2.COLOR_BGR2RGBA)
             assembly_completed = False
             operator_tracking = True
     elif operator_tracking:
+        draw_validation('aux')
         if operator_detected:
+            draw_validation('no')
             cv2_array = draw_caution(image)
         else:
             cv2_array = cv2.cvtColor(image, cv2.COLOR_BGR2RGBA)
-    elif gloves_missing:
+    elif hand_detected:
+        draw_validation('no')
         cv2_array = draw_gloves(image)
-        gloves_missing = False
     else:
         cv2_array = cv2.cvtColor(image, cv2.COLOR_BGR2RGBA)
     pil_image = Image.fromarray(cv2_array)
@@ -274,11 +277,11 @@ def process_multilabel(predictions):
             if multilabel_labels[11] in detected_labels:
                 message = multilabel_error[3]
         elif len(detected_labels) > 0:
-            checking_value = 'yes'
             if current_step == 3:
                 condition_1 = multilabel_labels[3] in detected_labels
                 condition_2 = multilabel_labels[4] in detected_labels
                 if condition_1 and condition_2:
+                    checking_value = 'yes'
                     update_message()
                     update_progress()
                     # Activate Part 4 + O-Ring Step
@@ -291,6 +294,7 @@ def process_multilabel(predictions):
                 condition_1 = multilabel_labels[6] in detected_labels
                 condition_2 = multilabel_labels[7] in detected_labels
                 if condition_1 and condition_2:
+                    checking_value = 'yes'
                     update_message()
                     update_progress()
                 elif condition_1:
@@ -298,6 +302,7 @@ def process_multilabel(predictions):
             else:
                 for label in detected_labels:
                     if str(current_step) in label:
+                        checking_value = 'yes'
                         update_message()
                         update_progress()
                         break
@@ -313,10 +318,7 @@ def process_multilabel(predictions):
 def process_detection(predictions):
     global current_message
     message = detection_help[current_message]
-    if len(predictions) > 0:
-        checking_value = 'yes'
-    else:
-        checking_value = 'aux'
+    checking_value = 'aux'
     selected_predictions = []
     for prediction in predictions:
         if str(current_step) in prediction.Label:
@@ -340,10 +342,12 @@ def process_detection(predictions):
                 if label == detection_labels[1]:
                     part_labels = part_labels + 1
             if part_labels == 4:
+                checking_value = 'yes'
                 update_message()
                 update_progress()
         if current_step == 6:
             if detection_labels[4] in selected_labels:
+                checking_value = 'yes'
                 update_message()
                 update_progress()
     draw_validation(checking_value)
@@ -359,7 +363,7 @@ def process_multiclass(predictions):
     global current_step
     global current_model
     global assembly_completed
-    checking_value = 'yes'
+    checking_value = 'aux'
     if current_message == len(multiclass_help):
         current_message = len(multiclass_help) - 1
         current_step = 7
@@ -380,10 +384,6 @@ def process_multiclass(predictions):
             elif multiclass_labels[1] in detected_labels:
                 checking_value = 'yes'
                 update_message()
-            else:
-                checking_value = 'yes'
-        else:
-            checking_value = 'aux'
     draw_validation(checking_value)
     write_instruction(message)
     if current_message == 0:
@@ -393,13 +393,11 @@ def process_multiclass(predictions):
             image=color_images[current_step], bg=colors_hex['yes'])
         window.bar_progress[current_step].config(
             image=progress_images['yes'], bg=colors_hex['yes'])
+        draw_validation('yes')
         update_message()
 
 def process_part_4_det(predictions):
-    if len(predictions) > 0:
-        checking_value = 'yes'
-    else:
-        checking_value = 'aux'
+    checking_value = 'aux'
     selected_predictions = []
     for prediction in predictions:
         selected_predictions.append(prediction)
@@ -411,9 +409,9 @@ def process_part_count(predictions):
     global part6_max
     part5_count = 0
     part6_count = 0
+    checking_value = 'aux'
     if len(predictions) > 0:
         predictions = order_predictions(predictions)
-        checking_value = 'yes'
         for prediction in predictions:
             if 'False' in prediction.Label:
                 checking_value = 'no'
@@ -424,8 +422,8 @@ def process_part_count(predictions):
                     part6_count = part6_count + 1
         if part5_count > part5_max or part6_count > part6_max:
             checking_value = 'no'
-    else:
-        checking_value = 'aux'
+        if part5_count == part5_max and part6_count == part6_max:
+            checking_value = 'yes'
     validations = make_validations(predictions)
     draw_validation(checking_value)
     return validations
@@ -595,6 +593,7 @@ def draw_rectangle(image, box, color, thick):
     return image
 
 def draw_completed(image):
+    draw_validation('yes')
     completed = cv2.imread(completed_image)
     mask = cv2.imread(completed_mask, cv2.IMREAD_GRAYSCALE)
     background = cv2.bitwise_or(image, image, mask = mask)
@@ -603,6 +602,7 @@ def draw_completed(image):
     return cv2_array
 
 def draw_gloves(image):
+    draw_validation('no')
     gloves = cv2.imread(gloves_image)
     mask = cv2.imread(gloves_mask, cv2.IMREAD_GRAYSCALE)
     background = cv2.bitwise_or(image, image, mask = mask)
@@ -611,6 +611,7 @@ def draw_gloves(image):
     return cv2_array
 
 def draw_caution(image):
+    draw_validation('no')
     caution = cv2.imread(caution_image)
     mask = cv2.imread(caution_mask, cv2.IMREAD_GRAYSCALE)
     background = cv2.bitwise_or(image, image, mask = mask)
