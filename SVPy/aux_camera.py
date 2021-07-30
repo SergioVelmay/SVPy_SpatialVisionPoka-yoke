@@ -1,15 +1,13 @@
 import depthai as dai
-import threading
+from threading import Thread
 
 class Camera:
     def __init__(self) -> None:
         self.NAME = 'RGB'
         self.Pipeline = dai.Pipeline()
         self.Create()
-        print('[ SVPy ] Depth AI RGB Camera created')
         self.Frame = None
-        threading.Thread(target=self.Capture, daemon=True).start()
-        print('[ SVPy ] Depth AI RGB Camera capturing')
+        Thread(target=self.Capture, daemon=True).start()
 
     def Create(self):
         self.RGB_Camera = self.Pipeline.createColorCamera()
