@@ -103,6 +103,9 @@ leds = [led_green, led_white, led_red, led_yellow, led_blue]
 
 buzzer = Buzzer(24)
 
+buzzer_active = False
+buzzer_final = True
+
 def leds_loading():
     print('[ SVPy ] LEDs and Buzzer GPIO Pins added')
     sleep(0.50)
@@ -199,6 +202,7 @@ def video_streaming():
         elif oring_tracking:
             detections = process_part_4_det(predictions)
             image = draw_detections(image, detections)
+            checking_value = 'aux'
             if hand_detected:
                 text = 'SAFETY GLOVES ARE NEEDED TO RESUME ASSEMBLY'
             else:
@@ -219,7 +223,7 @@ def video_streaming():
                         if 'True' in validations[0].Label:
                             color = colors_bgr['yes']
                             if glove_detected:
-                                draw_validation('yes')
+                                checking_value = 'yes'
                                 oring_counts_ok = oring_counts_ok + 1
                                 if oring_counts_ok > min_validations:
                                     oring_tracking = False
@@ -227,9 +231,13 @@ def video_streaming():
                                     glove_detected = False
                                     hand_detected = False
                         else:
+                            checking_value = 'no'
                             color = colors_bgr['no']
                         cv2.putText(image, 'O-Ring', (x1 + 85, y1 + 25), fontFace=cv2.FONT_HERSHEY_DUPLEX,  
                             fontScale=0.9, thickness=2, color=color, bottomLeftOrigin=False)
+            if not hand_detected:
+                draw_validation(checking_value)
+                led_routing(checking_value)
             window.instruction.config(text=text)
             window.assembly.config(image=assembly_images[4])
             window.currently.config(text='Part 4 + O-Ring detections:')
@@ -246,6 +254,7 @@ def video_streaming():
         if operator_tracking:
             if operator_detected:
                 draw_validation('no')
+                led_routing('no')
             window.instruction.config(text='CAUTION! THE ASSEMBLY AREA SHOULD BE CLEAR NOW')
             window.assembly.config(image=assembly_images[7])
             window.currently.config(text='Assembly Area detections:')
@@ -257,21 +266,20 @@ def video_streaming():
     if assembly_completed:
         if completed_count < 40:
             completed_count = completed_count + 1
-            draw_validation('yes')
             cv2_array = draw_completed(image)
         else:
             cv2_array = cv2.cvtColor(image, cv2.COLOR_BGR2RGBA)
             assembly_completed = False
             operator_tracking = True
     elif operator_tracking:
-        draw_validation('aux')
         if operator_detected:
-            draw_validation('no')
             cv2_array = draw_caution(image)
         else:
+            draw_validation('aux')
+            led_routing('aux')
+            buzzer_alert_off()
             cv2_array = cv2.cvtColor(image, cv2.COLOR_BGR2RGBA)
     elif hand_detected:
-        draw_validation('no')
         cv2_array = draw_gloves(image)
     else:
         cv2_array = cv2.cvtColor(image, cv2.COLOR_BGR2RGBA)
@@ -395,6 +403,7 @@ def process_multiclass(predictions):
     global current_step
     global current_model
     global assembly_completed
+    global operator_tracking
     checking_value = 'aux'
     if current_message == len(multiclass_help):
         current_message = len(multiclass_help) - 1
@@ -416,8 +425,15 @@ def process_multiclass(predictions):
             elif multiclass_labels[1] in detected_labels:
                 checking_value = 'yes'
                 update_message()
+    if current_message == len(multiclass_help) - 1:
+        checking_value = 'yes'
+    if assembly_completed:
+        checking_value = 'yes'
+    if operator_tracking:
+        checking_value = 'aux'
     draw_validation(checking_value)
-    led_routing(checking_value)
+    if not assembly_completed and not operator_tracking:
+        led_routing(checking_value)
     write_instruction(message)
     if current_message == 0:
         update_message()
@@ -426,16 +442,12 @@ def process_multiclass(predictions):
             image=color_images[current_step], bg=colors_hex['yes'])
         window.bar_progress[current_step].config(
             image=progress_images['yes'], bg=colors_hex['yes'])
-        draw_validation('yes')
         update_message()
 
 def process_part_4_det(predictions):
-    checking_value = 'aux'
     selected_predictions = []
     for prediction in predictions:
         selected_predictions.append(prediction)
-    draw_validation(checking_value)
-    led_routing(checking_value)
     return selected_predictions
 
 def process_part_count(predictions):
@@ -631,6 +643,8 @@ def draw_rectangle(image, box, color, thick):
 
 def draw_completed(image):
     draw_validation('yes')
+    led_green_on()
+    buzzer_completed()
     completed = cv2.imread(completed_image)
     mask = cv2.imread(completed_mask, cv2.IMREAD_GRAYSCALE)
     background = cv2.bitwise_or(image, image, mask = mask)
@@ -640,6 +654,8 @@ def draw_completed(image):
 
 def draw_gloves(image):
     draw_validation('no')
+    led_blue_on()
+    buzzer_gloves()
     gloves = cv2.imread(gloves_image)
     mask = cv2.imread(gloves_mask, cv2.IMREAD_GRAYSCALE)
     background = cv2.bitwise_or(image, image, mask = mask)
@@ -649,6 +665,8 @@ def draw_gloves(image):
 
 def draw_caution(image):
     draw_validation('no')
+    led_yellow_on()
+    buzzer_alert_on()
     caution = cv2.imread(caution_image)
     mask = cv2.imread(caution_mask, cv2.IMREAD_GRAYSCALE)
     background = cv2.bitwise_or(image, image, mask = mask)
@@ -682,14 +700,69 @@ def led_red_on():
     leds_off()
     led_red.on()
 
-def buzzer_beep(time: float):
+def led_blue_on():
+    leds_off()
+    led_blue.on()
+    led_red.on()
+
+def led_yellow_on():
+    leds_off()
+    led_yellow.on()
+    led_red.on()
+
+def buzzer_triple_beep():
+    global buzzer_active
+    buzzer_active = True
     buzzer.on()
-    sleep(time)
+    sleep(0.050)
     buzzer.off()
+    sleep(0.025)
+    buzzer.on()
+    sleep(0.050)
+    buzzer.off()
+    sleep(0.025)
+    buzzer.on()
+    sleep(0.050)
+    buzzer.off()
+    sleep(1.500)
+    buzzer_active = False
+
+def buzzer_long_beep():
+    global buzzer_final
+    buzzer.on()
+    sleep(0.600)
+    buzzer.off()
+    buzzer_final = False
 
 def buzzer_verify():
+    buzzer.on()
+    sleep(0.200)
     buzzer.off()
-    Thread(target=buzzer_beep, args=(0.200, ), daemon=True).start()
+
+def buzzer_gloves():
+    global buzzer_active
+    if not buzzer_active:
+        Thread(target=buzzer_triple_beep, daemon=True).start()
+
+def buzzer_completed():
+    global buzzer_final
+    if buzzer_final:
+        Thread(target=buzzer_long_beep, daemon=True).start()
+
+def buzzer_alert():
+    global buzzer_active
+    buzzer_active = True
+    buzzer.blink(0.150, 0.050)
+
+def buzzer_alert_on():
+    global buzzer_active
+    if not buzzer_active:
+        Thread(target=buzzer_alert, daemon=True).start()
+
+def buzzer_alert_off():
+    global buzzer_active
+    buzzer_active = False
+    buzzer.off()
 
 def main():
     video_streaming()
