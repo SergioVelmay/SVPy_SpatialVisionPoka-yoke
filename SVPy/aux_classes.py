@@ -9,7 +9,7 @@ class Classification:
         if (self.Label.startswith('Step') or self.Label.startswith('Part')):
             if len(words[0]) > 4:
                 words[0] = words[0][:4] + ' #' + words[0][4:]
-        return ' - '.join(tuple(words)) + '   ( {:.1f}'.format(self.Score) + '% )'
+        return ' - '.join(tuple(words)) + ' ({:.1f}'.format(self.Score)[0:4] + '%)'
 
 class Boundary:
 

@@ -4,16 +4,29 @@ from PIL import ImageTk, Image
 from datetime import datetime
 import logging
 from openvino.inference_engine import IECore
-from time import sleep
-from gpiozero import LED, Buzzer
+import time
 import warnings
 
 warnings.filterwarnings("ignore")
 
+from aux_interface import Window
+
+window = Window()
+print('[ SVPy ] Graphical Interface loaded')
+
+from aux_camera import Camera
 from aux_constants import colors_hex, colors_bgr, welcome
 from aux_constants import multilabel_labels, multilabel_help, multilabel_error
 from aux_constants import detection_labels, detection_help, detection_error
 from aux_constants import multiclass_labels, multiclass_help, multiclass_error
+from aux_classes import Validation
+from aux_images import color_images, progress_images
+from aux_images import assembly_images, validation_images
+from aux_images import completed_image, completed_mask
+from aux_images import gloves_image, gloves_mask
+from aux_images import caution_image, caution_mask
+from custom_vision_classification import ImageClassification
+from custom_vision_detection import ObjectDetection
 
 number_of_models = 3
 number_of_steps = 8
@@ -62,13 +75,7 @@ operator_detected = False
 
 frame_number = 0
 
-print('[ SVPy ] Spatial Vision Poka-yoke launched')
-
 logging.basicConfig(format='[ %(levelname)s ] New Image Capture | Frame Count %(message)s | %(asctime)s', level=logging.INFO)
-
-from custom_vision_classification import ImageClassification
-from custom_vision_detection import ObjectDetection
-from aux_classes import Validation
 
 inference_engine = IECore()
 print('[ SVPy ] OpenVINO Inference Engine created')
@@ -88,49 +95,9 @@ print('[ SVPy ] Hidden Part Detection model loaded')
 oring_class = ImageClassification(inference_engine, 'models/oring_classification/openvino/', 0.5, 1)
 print('[ SVPy ] O-Ring Classification model loaded')
 
-from aux_camera import Camera
-
 camera = Camera()
-print('[ SVPy ] Depth AI RGB Camera device created')
 
-led_green = LED(21)
-led_white = LED(16)
-led_red = LED(12)
-led_yellow = LED(1)
-led_blue = LED(8)
-
-leds = [led_green, led_white, led_red, led_yellow, led_blue]
-
-buzzer = Buzzer(24)
-
-buzzer_active = False
-buzzer_final = True
-
-def leds_loading():
-    print('[ SVPy ] LEDs and Buzzer GPIO Pins added')
-    sleep(0.50)
-    for led in leds:
-        led.on()
-        sleep(0.25)
-    buzzer.on()
-    sleep(0.25)
-    buzzer.off()
-    for led in leds:
-        led.off()
-        sleep(0.25)
-
-leds_loading()
-
-from aux_interface import Window
-
-window = Window()
-print('[ SVPy ] Graphical User Interface loaded')
-
-from aux_images import color_images, progress_images
-from aux_images import assembly_images, validation_images
-from aux_images import completed_image, completed_mask
-from aux_images import gloves_image, gloves_mask
-from aux_images import caution_image, caution_mask
+time.sleep(3)
 
 def video_streaming():
     global frame_number
@@ -202,7 +169,6 @@ def video_streaming():
         elif oring_tracking:
             detections = process_part_4_det(predictions)
             image = draw_detections(image, detections)
-            checking_value = 'aux'
             if hand_detected:
                 text = 'SAFETY GLOVES ARE NEEDED TO RESUME ASSEMBLY'
             else:
@@ -223,7 +189,7 @@ def video_streaming():
                         if 'True' in validations[0].Label:
                             color = colors_bgr['yes']
                             if glove_detected:
-                                checking_value = 'yes'
+                                draw_validation('yes')
                                 oring_counts_ok = oring_counts_ok + 1
                                 if oring_counts_ok > min_validations:
                                     oring_tracking = False
@@ -231,13 +197,9 @@ def video_streaming():
                                     glove_detected = False
                                     hand_detected = False
                         else:
-                            checking_value = 'no'
                             color = colors_bgr['no']
                         cv2.putText(image, 'O-Ring', (x1 + 85, y1 + 25), fontFace=cv2.FONT_HERSHEY_DUPLEX,  
                             fontScale=0.9, thickness=2, color=color, bottomLeftOrigin=False)
-            if not hand_detected:
-                draw_validation(checking_value)
-                led_routing(checking_value)
             window.instruction.config(text=text)
             window.assembly.config(image=assembly_images[4])
             window.currently.config(text='Part 4 + O-Ring detections:')
@@ -254,7 +216,6 @@ def video_streaming():
         if operator_tracking:
             if operator_detected:
                 draw_validation('no')
-                led_routing('no')
             window.instruction.config(text='CAUTION! THE ASSEMBLY AREA SHOULD BE CLEAR NOW')
             window.assembly.config(image=assembly_images[7])
             window.currently.config(text='Assembly Area detections:')
@@ -266,20 +227,21 @@ def video_streaming():
     if assembly_completed:
         if completed_count < 40:
             completed_count = completed_count + 1
+            draw_validation('yes')
             cv2_array = draw_completed(image)
         else:
             cv2_array = cv2.cvtColor(image, cv2.COLOR_BGR2RGBA)
             assembly_completed = False
             operator_tracking = True
     elif operator_tracking:
+        draw_validation('aux')
         if operator_detected:
+            draw_validation('no')
             cv2_array = draw_caution(image)
         else:
-            draw_validation('aux')
-            led_routing('aux')
-            buzzer_alert_off()
             cv2_array = cv2.cvtColor(image, cv2.COLOR_BGR2RGBA)
     elif hand_detected:
+        draw_validation('no')
         cv2_array = draw_gloves(image)
     else:
         cv2_array = cv2.cvtColor(image, cv2.COLOR_BGR2RGBA)
@@ -345,7 +307,6 @@ def process_multilabel(predictions):
                         update_progress()
                         break
     draw_validation(checking_value)
-    led_routing(checking_value)
     write_instruction(message)
     if current_message == 0:
         update_message()
@@ -390,7 +351,6 @@ def process_detection(predictions):
                 update_message()
                 update_progress()
     draw_validation(checking_value)
-    led_routing(checking_value)
     write_instruction(message)
     if current_message == 0:
         update_message()
@@ -403,7 +363,6 @@ def process_multiclass(predictions):
     global current_step
     global current_model
     global assembly_completed
-    global operator_tracking
     checking_value = 'aux'
     if current_message == len(multiclass_help):
         current_message = len(multiclass_help) - 1
@@ -425,15 +384,7 @@ def process_multiclass(predictions):
             elif multiclass_labels[1] in detected_labels:
                 checking_value = 'yes'
                 update_message()
-    if current_message == len(multiclass_help) - 1:
-        checking_value = 'yes'
-    if assembly_completed:
-        checking_value = 'yes'
-    if operator_tracking:
-        checking_value = 'aux'
     draw_validation(checking_value)
-    if not assembly_completed and not operator_tracking:
-        led_routing(checking_value)
     write_instruction(message)
     if current_message == 0:
         update_message()
@@ -442,12 +393,15 @@ def process_multiclass(predictions):
             image=color_images[current_step], bg=colors_hex['yes'])
         window.bar_progress[current_step].config(
             image=progress_images['yes'], bg=colors_hex['yes'])
+        draw_validation('yes')
         update_message()
 
 def process_part_4_det(predictions):
+    checking_value = 'aux'
     selected_predictions = []
     for prediction in predictions:
         selected_predictions.append(prediction)
+    draw_validation(checking_value)
     return selected_predictions
 
 def process_part_count(predictions):
@@ -472,7 +426,6 @@ def process_part_count(predictions):
             checking_value = 'yes'
     validations = make_validations(predictions)
     draw_validation(checking_value)
-    led_routing(checking_value)
     return validations
 
 def order_predictions(predictions):
@@ -526,7 +479,6 @@ def make_validations(predictions):
     else:
         part_counts_ok = 0
     if part_counts_ok == min_validations:
-        buzzer_verify()
         parts_counting = False
     window.instruction.config(text=message)
     return validations
@@ -543,7 +495,6 @@ def update_progress():
     global step_validations
     current = validate_step()
     if step_validations[current] == min_validations:
-        buzzer_verify()
         window.bar_images[current_step].config(
             image=color_images[current_step], bg=colors_hex['yes'])
         window.bar_progress[current_step].config(
@@ -643,8 +594,6 @@ def draw_rectangle(image, box, color, thick):
 
 def draw_completed(image):
     draw_validation('yes')
-    led_green_on()
-    buzzer_completed()
     completed = cv2.imread(completed_image)
     mask = cv2.imread(completed_mask, cv2.IMREAD_GRAYSCALE)
     background = cv2.bitwise_or(image, image, mask = mask)
@@ -654,8 +603,6 @@ def draw_completed(image):
 
 def draw_gloves(image):
     draw_validation('no')
-    led_blue_on()
-    buzzer_gloves()
     gloves = cv2.imread(gloves_image)
     mask = cv2.imread(gloves_mask, cv2.IMREAD_GRAYSCALE)
     background = cv2.bitwise_or(image, image, mask = mask)
@@ -665,104 +612,12 @@ def draw_gloves(image):
 
 def draw_caution(image):
     draw_validation('no')
-    led_yellow_on()
-    buzzer_alert_on()
     caution = cv2.imread(caution_image)
     mask = cv2.imread(caution_mask, cv2.IMREAD_GRAYSCALE)
     background = cv2.bitwise_or(image, image, mask = mask)
     added_image = cv2.bitwise_or(background, caution)
     cv2_array = cv2.cvtColor(added_image, cv2.COLOR_BGR2RGBA)
     return cv2_array
-
-from threading import Thread
-
-def leds_off():
-    for led in leds:
-        led.off()
-
-def led_routing(text: str):
-    if text == 'yes':
-        led_green_on()
-    elif text == 'aux':
-        led_white_on()
-    elif text == 'no':
-        led_red_on()
-
-def led_green_on():
-    leds_off()
-    led_green.on()
-
-def led_white_on():
-    leds_off()
-    led_white.on()
-
-def led_red_on():
-    leds_off()
-    led_red.on()
-
-def led_blue_on():
-    leds_off()
-    led_blue.on()
-    led_red.on()
-
-def led_yellow_on():
-    leds_off()
-    led_yellow.on()
-    led_red.on()
-
-def buzzer_triple_beep():
-    global buzzer_active
-    buzzer_active = True
-    buzzer.on()
-    sleep(0.050)
-    buzzer.off()
-    sleep(0.025)
-    buzzer.on()
-    sleep(0.050)
-    buzzer.off()
-    sleep(0.025)
-    buzzer.on()
-    sleep(0.050)
-    buzzer.off()
-    sleep(1.500)
-    buzzer_active = False
-
-def buzzer_long_beep():
-    global buzzer_final
-    buzzer.on()
-    sleep(0.600)
-    buzzer.off()
-    buzzer_final = False
-
-def buzzer_verify():
-    buzzer.on()
-    sleep(0.200)
-    buzzer.off()
-
-def buzzer_gloves():
-    global buzzer_active
-    if not buzzer_active:
-        Thread(target=buzzer_triple_beep, daemon=True).start()
-
-def buzzer_completed():
-    global buzzer_final
-    if buzzer_final:
-        Thread(target=buzzer_long_beep, daemon=True).start()
-
-def buzzer_alert():
-    global buzzer_active
-    buzzer_active = True
-    buzzer.blink(0.150, 0.050)
-
-def buzzer_alert_on():
-    global buzzer_active
-    if not buzzer_active:
-        Thread(target=buzzer_alert, daemon=True).start()
-
-def buzzer_alert_off():
-    global buzzer_active
-    buzzer_active = False
-    buzzer.off()
 
 def main():
     video_streaming()

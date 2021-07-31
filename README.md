@@ -187,6 +187,8 @@
     pip install depthai
 
     sudo apt-get install python3-pil.imagetk
+
+    sudo pip3 install gpiozero
     ```
 
 8. Change folder
