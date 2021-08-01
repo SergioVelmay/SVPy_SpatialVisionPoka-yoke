@@ -25,10 +25,10 @@ class ImageClassification:
 
         n, c, h, w = network.inputs[self.input_blob].shape
 
-        # self.exec_network = inference_engine.load_network(network=network, device_name='AUTO')
+        self.exec_network = inference_engine.load_network(network=network, device_name='AUTO')
         # self.exec_network = inference_engine.load_network(network=network, device_name='MYRIAD')
         # self.exec_network = inference_engine.load_network(network=network, device_name='MULTI:MYRIAD.1.1.1-ma2480')
-        self.exec_network = inference_engine.load_network(network=network, device_name='MULTI:MYRIAD.1.1.2-ma2480')
+        # self.exec_network = inference_engine.load_network(network=network, device_name='MULTI:MYRIAD.1.1.2-ma2480')
 
         self.images = np.ndarray(shape=(n, c, h, w))
 

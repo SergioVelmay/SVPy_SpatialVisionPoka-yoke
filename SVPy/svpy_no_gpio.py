@@ -4,7 +4,7 @@ from PIL import ImageTk, Image
 from datetime import datetime
 import logging
 from openvino.inference_engine import IECore
-import time
+from time import sleep
 import warnings
 
 warnings.filterwarnings("ignore")
@@ -15,6 +15,9 @@ window = Window()
 print('[ SVPy ] Graphical Interface loaded')
 
 from aux_camera import Camera
+
+camera = Camera()
+
 from aux_constants import colors_hex, colors_bgr, welcome
 from aux_constants import multilabel_labels, multilabel_help, multilabel_error
 from aux_constants import detection_labels, detection_help, detection_error
@@ -42,12 +45,13 @@ for model in range(number_of_models):
     for message in range(number_of_messages[model]):
         message_waitings[str(model) + str(message)] = 0
 
-waiting_millis = 3
-waiting_frames = 20
+waiting_millis = 1
+waiting_frames = 30
 
-min_validations = 20
+min_validations = 30
 
 welcome_message = welcome
+welcome_duration = 1200
 welcome_waiting = 0
 
 current_step = 0
@@ -95,13 +99,10 @@ print('[ SVPy ] Hidden Part Detection model loaded')
 oring_class = ImageClassification(inference_engine, 'models/oring_classification/openvino/', 0.5, 1)
 print('[ SVPy ] O-Ring Classification model loaded')
 
-camera = Camera()
-
-time.sleep(3)
-
 def video_streaming():
     global frame_number
     global welcome_message
+    global welcome_duration
     global welcome_waiting
     global parts_counting
     global oring_tracking
@@ -123,7 +124,7 @@ def video_streaming():
     
     image = camera.Frame
 
-    if welcome_waiting > waiting_frames:
+    if welcome_waiting > welcome_duration:
         image_crop = image[0:480, 80:560]
         predictions = []
         time_inference_start = datetime.now().microsecond
@@ -545,14 +546,15 @@ def print_detections(predictions):
 def print_inference_time(start, end):
     ms = (end-start)/1000
     if ms > 0:
-        text = 'Infer: {:.1f}ms'.format(ms)
+        text = 'Infer: {:.1f} ms'.format(ms)
         window.inference.config(text=text)
 
 def print_total_time(start):
     end = datetime.now().microsecond
     ms = (end-start)/1000
     if ms > 0:
-        text = 'Total: {:.1f}ms'.format(ms)
+        fps = int(1000 / ms)
+        text = 'Total: {0} fps'.format(fps)
         window.total.config(text=text)
 
 def write_instruction(message):
