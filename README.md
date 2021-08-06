@@ -5,8 +5,14 @@
     - [Windows](#depthai-setup-windows)
     - [Ubuntu](#depthai-setup-ubuntu)
     - [Raspberry](#depthai-setup-raspberry)
+- [SVPy App Run](#svpy-app-run)
+    - [NNet Pipelines](#svpy-app-run-pipelines)
+    - [Application GUI](#svpy-app-run-application)
+    - [Spatial Depth](#svpy-app-run-spatial)
 
-## DepthAI Setup
+## DepthAI Setup <a id="depthai-setup"></a>
+
+[⇧](#top)
 
 ### Links <a id="depthai-setup-links"></a>
 
@@ -199,6 +205,118 @@
 9. Run the project
     ```
     python3 svpy.py
+    ```
+
+[⇧](#top)
+
+## SVPy App Run <a id="svpy-app-run"></a>
+
+```
+cd SVPy_SpatialVisionPoka-yoke/
+
+cd SVPy/
+```
+
+[⇧](#top)
+
+### NNet Pipelines <a id="svpy-app-run-pipelines"></a>
+
+- Part Count Detection
+    ```
+    python3 blob_part_count_detection.py
+    ```
+
+- Multilabel Classification
+    ```
+    python3 blob_multilabel_classification.py
+    ```
+
+- Objects Detection
+    ```
+    python3 blob_objects_detection.py
+    ```
+
+- Multiclass Classification
+    ```
+    python3 blob_multiclass_classification.py
+    ```
+
+- Hidden part Detection
+    ```
+    python3 blob_hidden_part_detection.py
+    ```
+
+- O-Ring Classification
+    ```
+    python3 blob_oring_classification.py
+    ```
+
+- Gloves Classification
+    ```
+    python3 blob_gloves_classification.py
+    ```
+
+[⇧](#top)
+
+### Application GUI <a id="svpy-app-run-application-spatial"></a>
+
+- Main Application GUI
+    ```
+    python3 svpy.py
+    ```
+
+- Main App GUI without GPIO
+    ```
+    python3 svpy_no_gpio.py
+    ```
+
+[⇧](#top)
+
+### Spatial Depth <a id="svpy-app-run"></a>
+
+- Part Count Levels
+    ```
+    python3 svpy_depth.py 0
+    ```
+
+- Level #0 to Step #1
+    ```
+    python3 svpy_depth.py 1
+    ```
+
+- Level #0 to Step #2
+    ```
+    python3 svpy_depth.py 2
+    ```
+
+- Level #0 to Step #3
+    ```
+    python3 svpy_depth.py 3
+    ```
+
+- Level #3 to Step #4
+    ```
+    python3 svpy_depth.py 4
+    ```
+
+- Level #4 to Step #5
+    ```
+    python3 svpy_depth.py 5
+    ```
+
+- Level #4 to Step #6
+    ```
+    python3 svpy_depth.py 6
+    ```
+
+- Level #5 to Step #7
+    ```
+    python3 svpy_depth.py 7
+    ```
+
+- Level #2 to Step #8
+    ```
+    python3 svpy_depth.py 8
     ```
 
 [⇧](#top)
