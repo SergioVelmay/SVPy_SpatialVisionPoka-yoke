@@ -41,8 +41,10 @@ camLeft_right_bot_x = camLeft_left_top_x + (w / 1280)
 camLeft_right_bot_y = camLeft_left_top_y + (h / 800)
 camLeftTopLeft = dai.Point2f(camLeft_left_top_x, camLeft_left_top_y)
 camLeftBotRight = dai.Point2f(camLeft_right_bot_x, camLeft_right_bot_y)
-camLeftManip.initialConfig.setCropRect(camLeftTopLeft.x, camLeftTopLeft.y, camLeftBotRight.x, camLeftBotRight.y)
-camLeftManip.setMaxOutputFrameSize(camLeft.getResolutionWidth()*camLeft.getResolutionHeight()*3)
+camLeftManip.initialConfig.setCropRect(
+    camLeftTopLeft.x, camLeftTopLeft.y, camLeftBotRight.x, camLeftBotRight.y)
+camLeftManip.setMaxOutputFrameSize(
+    camLeft.getResolutionWidth()*camLeft.getResolutionHeight()*3)
 camLeft.out.link(camLeftManip.inputImage)
 camLeftLink = pipeline.createXLinkOut()
 camLeftLink.setStreamName(NAME_LEFT)
@@ -61,8 +63,10 @@ camRight_right_bot_x = camRight_left_top_x + (w / 1280)
 camRight_right_bot_y = camRight_left_top_y + (h / 800)
 camRightTopLeft = dai.Point2f(camRight_left_top_x, camRight_left_top_y)
 camRightBotRight = dai.Point2f(camRight_right_bot_x, camRight_right_bot_y)
-camRightManip.initialConfig.setCropRect(camRightTopLeft.x, camRightTopLeft.y, camRightBotRight.x, camRightBotRight.y)
-camRightManip.setMaxOutputFrameSize(camRight.getResolutionWidth()*camRight.getResolutionHeight()*3)
+camRightManip.initialConfig.setCropRect(
+    camRightTopLeft.x, camRightTopLeft.y, camRightBotRight.x, camRightBotRight.y)
+camRightManip.setMaxOutputFrameSize(
+    camRight.getResolutionWidth()*camRight.getResolutionHeight()*3)
 camRight.out.link(camRightManip.inputImage)
 camRightLink = pipeline.createXLinkOut()
 camRightLink.setStreamName(NAME_RIGHT)
@@ -107,20 +111,33 @@ def calc_rect(x, y):
         dai.Point2f(calc_x(x+4), calc_y(y+4)))
 
 regions = {
-    1: [calc_rect(560, 311), calc_rect(683, 311), calc_rect(560, 393), calc_rect(683, 393)],
-    2: [calc_rect(574, 352), calc_rect(668, 352)],
-    3: [calc_rect(619, 321), calc_rect(619, 352), calc_rect(619, 390)],
-    4: [calc_rect(599, 351), calc_rect(646, 351)],
-    5: [calc_rect(602, 337), calc_rect(635, 337), calc_rect(602, 369), calc_rect(635, 369)],
-    6: [calc_rect(620, 349)],
-    7: [calc_rect(602, 335), calc_rect(635, 335), calc_rect(602, 367), calc_rect(635, 367)],
-    8: [calc_rect(561, 351), calc_rect(679, 351)],
-    9: [calc_rect(566, 352), calc_rect(595, 352), calc_rect(624, 352), calc_rect(653, 352), calc_rect(682, 352)]
+    0: [(566, 352), (595, 352), (624, 352), (653, 352), (682, 352)],
+    1: [(560, 311), (683, 311), (560, 393), (683, 393)],
+    2: [(574, 352), (668, 352)],
+    3: [(619, 321), (619, 352), (619, 390)],
+    4: [(599, 351), (646, 351)],
+    5: [(602, 337), (635, 337), (602, 369), (635, 369)],
+    6: [(620, 349)],
+    7: [(602, 335), (635, 335), (602, 367), (635, 367)],
+    8: [(561, 351), (679, 351)]
 }
 
-rois = regions[part_code]
+markers = {
+    0: [(256, 367), (357, 367), (458, 367), (559, 367), (660, 367)],
+    1: [(226, 220), (670, 220), (226, 514), (670, 514)],
+    2: [(286, 364), (612, 364)],
+    3: [(450, 268), (450, 364), (450, 499)],
+    4: [(373, 360), (535, 360)],
+    5: [(402, 298), (511, 298), (402, 411), (511, 411)],
+    6: [(460, 350)],
+    7: [(392, 298), (501, 298), (392, 411), (501, 411)],
+    8: [(250, 355), (650, 355)]
+}
 
-for roi in rois:
+roi_regions = regions[part_code]
+
+for roi_region in roi_regions:
+    roi = calc_rect(roi_region)
     location = dai.SpatialLocationCalculatorConfigData()
     location.depthThresholds.lowerThreshold = 300
     location.depthThresholds.upperThreshold = 1800
@@ -129,18 +146,6 @@ for roi in rois:
 
 space.out.link(dataLink.input)
 spaceLink.out.link(space.inputConfig)
-
-markers = {
-    1: [ (226, 220), (670, 220), (226, 514), (670, 514) ],
-    2: [ (286, 364), (612, 364) ],
-    3: [ (450, 268), (450, 364), (450, 499) ],
-    4: [ (373, 360), (535, 360) ],
-    5: [ (402, 298), (511, 298), (402, 411), (511, 411) ],
-    6: [ (460, 350) ],
-    7: [ (392, 298), (501, 298), (392, 411), (501, 411) ],
-    8: [ (250, 355), (650, 355) ],
-    9: [ (256, 367), (357, 367), (458, 367), (559, 367), (660, 367) ]
-}
 
 with dai.Device(pipeline) as device:
 
@@ -151,17 +156,19 @@ with dai.Device(pipeline) as device:
     queueDepth = device.getOutputQueue(name=NAME_DEPTH, maxSize=4, blocking=False)
     queueData = device.getOutputQueue(name=NAME_DATA)
 
+    color = (255, 0, 0)
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    scale = 0.6
+    thick = 2
+
     def displayFrame(name, frame):
         cv2.imshow(name, frame)
     
     def draw_markers(image, markers):
         for mark in markers:
-            cv2.drawMarker(croppedColor, mark, (255, 0 ,0), markerType=cv2.MARKER_CROSS, markerSize=36, thickness=2)
-            cv2.drawMarker(croppedColor, mark, (255, 0 ,0), markerType=cv2.MARKER_SQUARE, markerSize=18, thickness=1)
+            cv2.drawMarker(croppedColor, mark, color, cv2.MARKER_CROSS, 36, thick)
+            cv2.drawMarker(croppedColor, mark, color, cv2.MARKER_SQUARE, 18, 1)
         return image
-
-    color = (255, 0, 0) # BGR Blue
-    fontType = cv2.FONT_HERSHEY_SIMPLEX
 
     while True:
 
@@ -171,37 +178,25 @@ with dai.Device(pipeline) as device:
         frameLeft = inLeft.getCvFrame()
         inRight = queueRight.get()
         frameRight = inRight.getCvFrame()
-        # inStereo = queueStereo.get()
-        # frameStereo = inStereo.getFrame()
         inDepth = queueDepth.get()
         inData = queueData.get()
         frameDepth = inDepth.getFrame()
 
         rgbLeft = cv2.cvtColor(frameLeft, cv2.COLOR_GRAY2RGB)
-        scaledLeft = resized = cv2.resize(rgbLeft, (300, 240), interpolation = cv2.INTER_CUBIC)
-        cv2.putText(scaledLeft, "Left Camera", (12, 27), fontType, 0.6, color, thickness=2)
-        # displayFrame(NAME_LEFT, scaledLeft)
+        scaledLeft = resized = cv2.resize(rgbLeft, (300, 240), interpolation=cv2.INTER_CUBIC)
+        cv2.putText(scaledLeft, "Left Camera", (12, 27), font, scale, color, thick)
 
         rgbRight = cv2.cvtColor(frameRight, cv2.COLOR_GRAY2RGB)
-        scaledRight = resized = cv2.resize(rgbRight, (300, 240), interpolation = cv2.INTER_CUBIC)
-        cv2.putText(scaledRight, "Right Camera", (12, 27), fontType, 0.6, color, thickness=2)
-        # displayFrame(NAME_RIGHT, scaledRight)
-
-        # stereoFrameColor = cv2.normalize(frameStereo, None, 150, 100, cv2.NORM_INF, cv2.CV_8UC1)
-        # stereoFrameColor = cv2.equalizeHist(stereoFrameColor)
-        # stereoFrameColor = cv2.applyColorMap(stereoFrameColor, cv2.COLORMAP_HOT)
-        # croppedStereo = stereoFrameColor[212:512, 448:748]
-        # displayFrame(NAME_STEREO, croppedStereo)
+        scaledRight = resized = cv2.resize(rgbRight, (300, 240), interpolation=cv2.INTER_CUBIC)
+        cv2.putText(scaledRight, "Right Camera", (12, 27), font, scale, color, thick)
 
         depthFrameColor = cv2.normalize(frameDepth, None, 255, 0, cv2.NORM_INF, cv2.CV_8UC1)
         depthFrameColor = cv2.equalizeHist(depthFrameColor)
         depthFrameColor = cv2.applyColorMap(depthFrameColor, cv2.COLORMAP_HOT)
-        # displayFrame(NAME_DEPTH + ' FULL', depthFrameColor)
 
         croppedColor = frameColor[522:1242, 1614:2514]
-        cv2.putText(croppedColor, "Color Camera", (12, 27), fontType, 0.6, color, thickness=2)
-        cv2.putText(croppedColor, "Height mm", (780, 27), fontType, 0.6, color, thickness=2)
-        # displayFrame(NAME_COLOR, croppedColor)
+        cv2.putText(croppedColor, "Color Camera", (12, 27), font, scale, color, thick)
+        cv2.putText(croppedColor, "Height mm", (780, 27), font, scale, color, thick)
 
         color_markers = draw_markers(croppedColor, markers[args.code])
 
@@ -214,21 +209,19 @@ with dai.Device(pipeline) as device:
                 text = f"{int(z_value / 2)}"
             else:
                 text = ""
-            cv2.putText(croppedColor, text, text_coords, fontType, 0.6, color, thickness=2)
+            cv2.putText(croppedColor, text, text_coords, font, scale, color, thick)
             roi = depthData.config.roi
             roi = roi.denormalize(width=depthFrameColor.shape[1], height=depthFrameColor.shape[0])
             x = int(roi.topLeft().x + ((roi.bottomRight().x - roi.topLeft().x) / 2))
             y = int(roi.topLeft().y + ((roi.bottomRight().y - roi.topLeft().y) / 2))
-            cv2.drawMarker(depthFrameColor, (x, y), (255, 0 ,0), markerType=cv2.MARKER_SQUARE, markerSize=9, thickness=1)
+            cv2.drawMarker(depthFrameColor, (x, y), color, cv2.MARKER_SQUARE, 9, 1)
 
         depthFrameCropped = depthFrameColor[251:451, 494:744]
         
-        depthFrameScaled = cv2.resize(depthFrameCropped, (300, 240), interpolation = cv2.INTER_CUBIC)
-        cv2.putText(depthFrameScaled, "Spatial Depth", (12, 27), fontType, 0.6, color, thickness=2)
-        # displayFrame(NAME_DEPTH, depthFrameScaled)
+        depthFrameScaled = cv2.resize(depthFrameCropped, (300, 240), interpolation=cv2.INTER_CUBIC)
+        cv2.putText(depthFrameScaled, "Spatial Depth", (12, 27), font, scale, color, thick)
 
         combo_vertical = cv2.vconcat([scaledLeft, depthFrameScaled, scaledRight])
-        # displayFrame('COMBO VERTICAL', combo_vertical)
 
         combo = cv2.hconcat([combo_vertical, croppedColor])
         displayFrame('SVPy | Spatial Vision Poka-yoke', combo)
